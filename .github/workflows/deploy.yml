@@ -36,7 +36,10 @@ jobs:
 
       - name: Terraform apply for base infrastructure
         working-directory: terraform
-        run: terraform apply -auto-approve -var="aws_region=ap-south-1"
+        run: |
+          terraform import aws_ecr_repository.backend cld400-backend || true
+          terraform import aws_ecr_repository.frontend cld400-frontend || true
+          terraform apply -auto-approve -var="aws_region=ap-south-1"
 
       - name: Login to Amazon ECR
         id: login-ecr

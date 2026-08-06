@@ -94,10 +94,16 @@ resource "aws_route_table_association" "public_b" {
 
 resource "aws_ecr_repository" "backend" {
   name = "cld400-backend"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_ecr_repository" "frontend" {
   name = "cld400-frontend"
+  image_scanning_configuration {
+    scan_on_push = true
+  }
 }
 
 resource "aws_cloudwatch_log_group" "ecs" {
