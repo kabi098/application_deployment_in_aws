@@ -49,4 +49,6 @@ jobs:
 
       - name: Terraform destroy
         working-directory: terraform
-        run: terraform destroy -auto-approve
+        run: |
+          terraform destroy -auto-approve -target=aws_lb.main -target=aws_lb_listener.front_end -target=aws_lb_listener_rule.backend -target=aws_lb_target_group.frontend -target=aws_lb_target_group.backend || true
+          terraform destroy -auto-approve
