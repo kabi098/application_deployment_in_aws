@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -22,6 +22,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: terraform
+        run: terraform init
+
+      - name: Create ECR repositories if needed
+        run: |
+          aws ecr describe-repositories --repository-names cld400-frontend --region ap-south-1 >/dev/null 2>&1 || aws ecr create-repository --repository-name cld400-frontend --region ap-south-1 >/dev/null
+          aws ecr describe-repositories --repository-names cld400-backend --region ap-south-1 >/dev/null 2>&1 || aws ecr create-repository --repository-name cld400-backend --region ap-south-1 >/dev/null
+
+      - name: Terraform apply for base infrastructure
+        working-directory: terraform
+        run: terraform apply -auto-approve -var="aws_region=ap-south-1"
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
@@ -35,3 +51,11 @@ jobs:
         run: |
           docker build -t ${{ steps.login-ecr.outputs.registry }}/cld400-backend:latest ./backend
           docker push ${{ steps.login-ecr.outputs.registry }}/cld400-backend:latest
+
+      - name: Terraform apply with deployed image values
+        working-directory: terraform
+        run: |
+          terraform apply -auto-approve \
+            -var="aws_region=ap-south-1" \
+            -var="frontend_image=${{ steps.login-ecr.outputs.registry }}/cld400-frontend:latest" \
+            -var="backend_image=${{ steps.login-ecr.outputs.registry }}/cld400-backend:latest"
