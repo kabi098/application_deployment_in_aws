@@ -43,12 +43,6 @@ jobs:
           terraform import aws_iam_role.ecs_task_execution cld400-ecs-task-execution || true
           terraform import aws_db_subnet_group.main cld400-db-subnet-group || true
           terraform import aws_elasticache_subnet_group.main cld400-cache-subnet-group || true
-          ALB_ARN=$(aws elbv2 describe-load-balancers --names cld400-alb --region ap-south-1 --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || true)
-          TG_FRONTEND_ARN=$(aws elbv2 describe-target-groups --names cld400-frontend-tg --region ap-south-1 --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
-          TG_BACKEND_ARN=$(aws elbv2 describe-target-groups --names cld400-backend-tg --region ap-south-1 --query 'TargetGroups[0].TargetGroupArn' --output text 2>/dev/null || true)
-          [ -n "$ALB_ARN" ] && terraform import aws_lb.main "$ALB_ARN" || true
-          [ -n "$TG_FRONTEND_ARN" ] && terraform import aws_lb_target_group.frontend "$TG_FRONTEND_ARN" || true
-          [ -n "$TG_BACKEND_ARN" ] && terraform import aws_lb_target_group.backend "$TG_BACKEND_ARN" || true
           terraform apply -auto-approve -var="aws_region=ap-south-1"
 
       - name: Login to Amazon ECR
