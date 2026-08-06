@@ -26,17 +26,26 @@ jobs:
 
       - name: Prepare AWS resources for destroy
         run: |
-          aws elbv2 describe-load-balancers --names cld400-alb --region ap-south-1 --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null | while read -r alb_arn; do
-            if [ -n "$alb_arn" ]; then
-              aws elbv2 describe-listeners --load-balancer-arn "$alb_arn" --region ap-south-1 --query 'Listeners[?Protocol==`HTTP`].[ListenerArn]' --output text 2>/dev/null | while read -r listener_arn; do
-                if [ -n "$listener_arn" ]; then
-                  aws elbv2 delete-rule --rule-arn $(aws elbv2 describe-rules --listener-arn "$listener_arn" --region ap-south-1 --query 'Rules[?Priority!=`default`].[RuleArn]' --output text 2>/dev/null) 2>/dev/null || true
-                  aws elbv2 delete-listener --listener-arn "$listener_arn" --region ap-south-1 2>/dev/null || true
-                fi
-              done
-              aws elbv2 delete-load-balancer --load-balancer-arn "$alb_arn" --region ap-south-1 2>/dev/null || true
-            fi
-          done
+          set -e
+          ALB_ARN=$(aws elbv2 describe-load-balancers --names cld400-alb --region ap-south-1 --query 'LoadBalancers[0].LoadBalancerArn' --output text 2>/dev/null || true)
+          if [ -n "$ALB_ARN" ]; then
+            echo "Found load balancer $ALB_ARN"
+            LISTENER_ARNS=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --region ap-south-1 --query 'Listeners[?Protocol==`HTTP`].ListenerArn' --output text 2>/dev/null || true)
+            for listener_arn in $LISTENER_ARNS; do
+              if [ -n "$listener_arn" ]; then
+                RULE_ARNS=$(aws elbv2 describe-rules --listener-arn "$listener_arn" --region ap-south-1 --query 'Rules[?Priority!=`default`].RuleArn' --output text 2>/dev/null || true)
+                for rule_arn in $RULE_ARNS; do
+                  if [ -n "$rule_arn" ]; then
+                    aws elbv2 delete-rule --rule-arn "$rule_arn" --region ap-south-1 2>/dev/null || true
+                  fi
+                done
+                aws elbv2 delete-listener --listener-arn "$listener_arn" --region ap-south-1 2>/dev/null || true
+              fi
+            done
+            aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN" --region ap-south-1 2>/dev/null || true
+            aws elbv2 wait load-balancer-available --names cld400-alb --region ap-south-1 2>/dev/null || true
+            aws elbv2 wait load-balancer-deleted --names cld400-alb --region ap-south-1 2>/dev/null || true
+          fi
 
       - name: Terraform destroy
         working-directory: terraform
