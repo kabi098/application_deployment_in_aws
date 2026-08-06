@@ -1,0 +1,9 @@
+{
+  "name": "cld400-backend",
+  "version": "1.0.0",
+  "description": "Simple backend service for CLD400 prototype",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}
