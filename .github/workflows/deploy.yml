@@ -39,6 +39,13 @@ jobs:
         run: |
           terraform import aws_ecr_repository.backend cld400-backend || true
           terraform import aws_ecr_repository.frontend cld400-frontend || true
+          terraform import aws_cloudwatch_log_group.ecs /ecs/cld400 || true
+          terraform import aws_iam_role.ecs_task_execution cld400-ecs-task-execution || true
+          terraform import aws_lb.main cld400-alb || true
+          terraform import aws_lb_target_group.frontend cld400-frontend-tg || true
+          terraform import aws_lb_target_group.backend cld400-backend-tg || true
+          terraform import aws_db_subnet_group.main cld400-db-subnet-group || true
+          terraform import aws_elasticache_subnet_group.main cld400-cache-subnet-group || true
           terraform apply -auto-approve -var="aws_region=ap-south-1"
 
       - name: Login to Amazon ECR
